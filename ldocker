@@ -1,0 +1,40 @@
+#!/bin/bash
+set -euf -o pipefail
+
+LDOCKER="ldocker"
+LDOCKER_SOCK="$( realpath ~/.lima )/$LDOCKER/sock/docker.sock"
+
+# limactl shell docker docker run -it -v $HOME:$HOME --rm alpine
+
+case "${1:-}" in
+'start')
+	REALPATH="$0"
+	while [ -h "${REALPATH}" ]
+	do
+		REALPATH="$(readlink "${REALPATH}")"
+	done
+
+	CFG="$(dirname "${REALPATH}")/${LDOCKER}.yaml"
+	if ! limactl list | fgrep -q "${LDOCKER}"
+	then
+		limactl start "${CFG}" --tty=false
+	fi
+	
+	docker context update ${LDOCKER} --docker="host=unix://$LDOCKER_SOCK" || \
+	docker context create ${LDOCKER} --docker="host=unix://$LDOCKER_SOCK"
+	docker context use ${LDOCKER}
+	;;
+'stop')
+	limactl stop "${LDOCKER}"
+	;;
+'rm' | 'remove')
+	limactl remove "${LDOCKER}"
+	;;
+'status')
+	limactl list | grep -E "^(NAME|${LDOCKER})"
+	;;
+*)
+	>&2 echo "Usage: $0 (start|status|stop|remove)"
+	exit 1
+	;;
+esac
