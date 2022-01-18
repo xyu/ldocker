@@ -15,8 +15,10 @@ case "${1:-}" in
 	done
 
 	CFG="$(dirname "${REALPATH}")/${LDOCKER}.yaml"
-	if ! limactl list | fgrep -q "${LDOCKER}"
+	if limactl list | fgrep -q "${LDOCKER}"
 	then
+		limactl start "${LDOCKER}" --tty=false
+	else
 		limactl start "${CFG}" --tty=false
 	fi
 	
